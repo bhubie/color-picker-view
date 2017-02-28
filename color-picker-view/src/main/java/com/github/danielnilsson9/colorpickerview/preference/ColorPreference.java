@@ -17,22 +17,26 @@
 package com.github.danielnilsson9.colorpickerview.preference;
 
 import com.github.danielnilsson9.colorpickerview.R;
+import com.github.danielnilsson9.colorpickerview.dialog.ColorPickerPreferenceDialog;
 import com.github.danielnilsson9.colorpickerview.view.ColorPanelView;
+
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.preference.Preference;
 import android.util.AttributeSet;
 import android.view.View;
 
-public class ColorPreference extends Preference {
+public class ColorPreference extends Preference  implements ColorPickerPreferenceDialog.ColorPickerDialogListener{
 
-	public interface OnShowDialogListener {
+
+	/*public interface OnShowDialogListener {
 		public void onShowColorPickerDialog(String title, int currentColor);
-	}
+	}*/
 	
-	private OnShowDialogListener mListener;
+	//private OnShowDialogListener mListener;
 	
-	private int mColor = 0xFF000000;
+	private int mColor = -24832;
 	
 	
 	public ColorPreference(Context context, AttributeSet attrs) {
@@ -47,60 +51,41 @@ public class ColorPreference extends Preference {
 	}
 	
 	private void init(AttributeSet attrs) {
-		setPersistent(true);	
-		
+		setPersistent(true);
 		setWidgetLayoutResource(R.layout.colorpickerview__preference_preview_layout);
-		
-		setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				
-				if(mListener != null) {
-					mListener.onShowColorPickerDialog((String) getTitle(), mColor);
-					return true;
-				}
-				else {
-					throw new IllegalArgumentException(
-							"You must first call setOnShowDialogListener() and " 
-									+ "handle showing the ColorPickerDialogFragment yourself.");
-				}				
-			}
-		});
+
 	}
 	
-	
-	/**
-	 * Since the color picker dialog is now a DialogFragment
-	 * this preference cannot take care of showing it without
-	 * access to the fragment manager. Therefore I leave it up to
-	 * you to actually show the dialog once the preference is clicked.
-	 * 
-	 * Call saveValue() once you have a color to save.
-	 * @param listener
-	 */
-	public void setOnShowDialogListener(OnShowDialogListener listener) {
-		mListener = listener;
-	}
-		
-	
+
 	@Override
 	protected void onBindView(View view) {
 		super.onBindView(view);
 		
 		ColorPanelView preview = (ColorPanelView) view.findViewById(R.id.colorpickerview__preference_preview_color_panel);
-		
 		if(preview != null) {
 			preview.setColor(mColor);
 		}
 		
 	}
+
+	@Override
+	protected void onClick() {
+		super.onClick();
+
+		ColorPickerPreferenceDialog fragment = ColorPickerPreferenceDialog.newInstance(mColor);
+		fragment.setColorPickerDialogListener(this);
+		Activity activity = (Activity) getContext();
+		activity.getFragmentManager().beginTransaction()
+				.add(fragment, "ColorPickerPreference")
+				.commit();
+
+	}
 	
 	@Override
 	protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {		
 		if(restorePersistedValue) {
-			mColor = getPersistedInt(0xFF000000);
-			//Log.d("mColorPicker", "Load saved color: " + mColor);
+			mColor = getPersistedInt(-24832);
+
 		}
 		else {
 			mColor = (Integer)defaultValue;
@@ -110,7 +95,7 @@ public class ColorPreference extends Preference {
 	
 	@Override
 	protected Object onGetDefaultValue(TypedArray a, int index) {
-		return a.getInteger(index, 0xFF000000);
+		return a.getInteger(index, -24832);
 	}
 	
 	
@@ -119,5 +104,11 @@ public class ColorPreference extends Preference {
 		persistInt(mColor);
 		notifyChanged();
 	}
-	
+
+	@Override
+	public void onColorSelected(int color) {
+		saveValue(color);
+	}
+
+
 }
